@@ -50,9 +50,21 @@ param(
     [ValidateNotNullOrEmpty()]
     $TargetEnvironment,
 
+    [parameter(Mandatory=$true)]
+    [ValidateNotNullOrEmpty()]
+    $LogFile,
+
+    [parameter(Mandatory=$true)]
+    [ValidateNotNullOrEmpty()]
+    $CSEResultFilePath,
+
     [string]
     $UserAssignedClientID
 )
+# Do not parse the start time from $LogFile to simplify the logic
+$StartTime=Get-Date
+$global:ExitCode=0
+$global:ErrorMessage=""
 
 # These globals will not change between nodes in the same cluster, so they are not
 # passed as powershell parameters
@@ -419,7 +431,7 @@ try
                 $o = docker image list
                 Write-Log $o
             }
-            throw "kubletwin/pause container does not exist!"
+            Set-ExitCode -ExitCode $global:WINDOWS_CSE_ERROR_PAUSE_IMAGE_NOT_EXIST -ErrorMessage "kubletwin/pause container does not exist!"
         }
 
         Write-Log "Configuring networking with NetworkPlugin:$global:NetworkPlugin"
@@ -515,6 +527,7 @@ try
             Remove-Item $kubeConfigFile
         }
 
+        # Postpone restart-computer so we can generate CSE response before restart computer
         Write-Log "Setup Complete, reboot computer"
         Restart-Computer
     }
@@ -533,8 +546,23 @@ catch
         $global:AppInsightsClient.Flush()
     }
 
-    # Add timestamp in the logs
-    Write-Log $_
-    throw $_
+    # Set-ExitCode will exit with the specified ExitCode immediately and not be caught by this catch block
+    # Ideally all exceptions will be handled and no exception will be thrown.
+    Set-ExitCode -ExitCode $global:WINDOWS_CSE_ERROR_UNKNOWN -ErrorMessage $_
+}
+finally
+{
+    # Generate CSE result so it can be returned as the CSE response in csecmd.ps1
+    Write-Log "Debug: LASTEXITCODE: $LASTEXITCODE"
+    Write-Log "Debug: Get last logs from $LogFile"
+    $Output=$(Get-Content $LogFile | Select -Last 100) -join " | "
+    $Output=$Output -replace "`"", "`'"
+    $ExecutionDuration=$(New-Timespan -Start $StartTime -End $(Get-Date))
+    Write-Log "Debug: ExecutionDuration: $ExecutionDuration.TotalSeconds"
+
+    $JsonString = "ExitCode: `"{0}`", Output: `"{1}`", Error: `"{2}`", ExecDuration: `"{3}`"" -f $global:ExitCode, $Output, $global:ErrorMessage, $ExecutionDuration.TotalSeconds
+    Write-Log "Debug: Generate CSE result to $CSEResultFilePath : {$JsonString}"
+    echo "{$JsonString}" | Out-File -FilePath $CSEResultFilePath -Encoding utf8
+    echo $global:ExitCode | Out-File -FilePath $CSEResultFilePath -Encoding utf8 -Append
 }
 

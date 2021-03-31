@@ -321,7 +321,7 @@ function Update-WindowsFeatures {
 }
 
 function Update-Registry {
-    Write-Host "Enable a HNS fix in 2021-2C"
+    Write-Log "Enable a HNS fix in 2021-2C"
     reg add HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\hns\State /v HNSControlFlag /t REG_DWORD /d 1
 }
 
@@ -331,14 +331,14 @@ $ProgressPreference = 'SilentlyContinue'
 $containerRuntime = $env:ContainerRuntime
 $validContainerRuntimes = @('containerd', 'docker')
 if (-not ($validContainerRuntimes -contains $containerRuntime)) {
-    Write-Host "Unsupported container runtime: $containerRuntime"
+    Write-Log "Unsupported container runtime: $containerRuntime"
     exit 1
 }
 
 $windowsSKU = $env:WindowsSKU
 $validSKU = @('2019', '2019-containerd', '2004')
 if (-not ($validSKU -contains $windowsSKU)) {
-    Write-Host "Unsupported windows image SKU: $windowsSKU"
+    Write-Log "Unsupported windows image SKU: $windowsSKU"
     exit 1
 }
 
