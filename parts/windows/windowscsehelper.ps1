@@ -14,6 +14,18 @@ function Set-ExitCode
     exit $ExitCode
 }
 
+function Postpone-RestartComputer
+{
+    Write-Log "Creating an one-time task to restart the VM"
+    $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument " -Command `"Restart-Computer -Force`""
+    $principal = New-ScheduledTaskPrincipal -UserId SYSTEM -LogonType ServiceAccount -RunLevel Highest
+    # trigger this task once
+    $trigger = New-JobTrigger -At  (Get-Date).AddSeconds(15).DateTime -Once
+    $definition = New-ScheduledTask -Action $action -Principal $principal -Trigger $trigger -Description "Restart computer after provisioning the VM"
+    Register-ScheduledTask -TaskName "restart-computer" -InputObject $definition
+    Write-Log "Created an one-time task to restart the VM"
+}
+
 $global:WINDOWS_CSE_ERROR_UNKNOWN=1 # For unexpected error caught by the catch block in kuberneteswindowssetup.ps1
 $global:WINDOWS_CSE_ERROR_FAIL_DOWNLOAD_FILE=2
 $global:WINDOWS_CSE_ERROR_INVOKE_EXECUTABLE=3

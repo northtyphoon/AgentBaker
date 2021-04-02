@@ -5355,6 +5355,7 @@ Expand-Archive scripts.zip -DestinationPath "C:\\AzureData\\"
 . c:\AzureData\windows\windowscontainerdfunc.ps1
 . c:\AzureData\windows\windowshostsconfigagentfunc.ps1
 . c:\AzureData\windows\windowscalicofunc.ps1
+. c:\AzureData\windows\windowscsehelper.ps1
 
 $useContainerD = ($global:ContainerRuntime -eq "containerd")
 $global:KubeClusterConfigPath = "c:\k\kubeclusterconfig.json"
@@ -5678,8 +5679,8 @@ try
 
         # Postpone restart-computer so we can generate CSE response before restart computer
         Write-Log "Setup Complete, reboot computer"
-        Restart-Computer
-        Set-ExitCode -ExitCode 88 -ErrorMessage "Test CSE Error"
+        Postpone-RestartComputer
+        Set-ExitCode -ExitCode 77 -ErrorMessage "Test CSE Error"
     }
     else
     {
@@ -6742,6 +6743,18 @@ function Set-ExitCode
     $global:ExitCode=$ExitCode
     $global:ErrorMessage=$ErrorMessage
     exit $ExitCode
+}
+
+function Postpone-RestartComputer
+{
+    Write-Log "Creating an one-time task to restart the VM"
+    $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument " -Command `+"`"+`"Restart-Computer -Force`+"`"+`""
+    $principal = New-ScheduledTaskPrincipal -UserId SYSTEM -LogonType ServiceAccount -RunLevel Highest
+    # trigger this task once
+    $trigger = New-JobTrigger -At  (Get-Date).AddSeconds(15).DateTime -Once
+    $definition = New-ScheduledTask -Action $action -Principal $principal -Trigger $trigger -Description "Restart computer after provisioning the VM"
+    Register-ScheduledTask -TaskName "restart-computer" -InputObject $definition
+    Write-Log "Created an one-time task to restart the VM"
 }
 
 $global:WINDOWS_CSE_ERROR_UNKNOWN=1 # For unexpected error caught by the catch block in kuberneteswindowssetup.ps1

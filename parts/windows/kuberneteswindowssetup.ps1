@@ -206,6 +206,7 @@ Expand-Archive scripts.zip -DestinationPath "C:\\AzureData\\"
 . c:\AzureData\windows\windowscontainerdfunc.ps1
 . c:\AzureData\windows\windowshostsconfigagentfunc.ps1
 . c:\AzureData\windows\windowscalicofunc.ps1
+. c:\AzureData\windows\windowscsehelper.ps1
 
 $useContainerD = ($global:ContainerRuntime -eq "containerd")
 $global:KubeClusterConfigPath = "c:\k\kubeclusterconfig.json"
@@ -529,8 +530,8 @@ try
 
         # Postpone restart-computer so we can generate CSE response before restart computer
         Write-Log "Setup Complete, reboot computer"
-        Restart-Computer
-        Set-ExitCode -ExitCode 88 -ErrorMessage "Test CSE Error"
+        Postpone-RestartComputer
+        Set-ExitCode -ExitCode 77 -ErrorMessage "Test CSE Error"
     }
     else
     {
