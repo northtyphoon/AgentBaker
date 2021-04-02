@@ -6,7 +6,7 @@ function Set-ExitCode
         [Parameter(Mandatory=$true)][int]
         $ExitCode,
         [Parameter(Mandatory=$true)][string]
-        $ErrorMessage,
+        $ErrorMessage
     )
     Write-Log "Set ExitCode to $ExitCode and exit. Error: $ErrorMessage"
     $global:ExitCode=$ExitCode

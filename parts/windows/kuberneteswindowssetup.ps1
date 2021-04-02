@@ -554,16 +554,12 @@ catch
 finally
 {
     # Generate CSE result so it can be returned as the CSE response in csecmd.ps1
-    Write-Log "Debug: LASTEXITCODE: $LASTEXITCODE"
-    Write-Log "Debug: Get last logs from $LogFile"
-    $Output=$(Get-Content $LogFile | Select -Last 100) -join " | "
-    $Output=$Output -replace "`"", "`'"
     $ExecutionDuration=$(New-Timespan -Start $StartTime -End $(Get-Date))
-    Write-Log "Debug: ExecutionDuration: $ExecutionDuration.TotalSeconds"
+    Write-Log "CSE ExecutionDuration: $ExecutionDuration"
 
-    $JsonString = "ExitCode: `"{0}`", Output: `"{1}`", Error: `"{2}`", ExecDuration: `"{3}`"" -f $global:ExitCode, $Output, $global:ErrorMessage, $ExecutionDuration.TotalSeconds
-    Write-Log "Debug: Generate CSE result to $CSEResultFilePath : {$JsonString}"
-    echo "{$JsonString}" | Out-File -FilePath $CSEResultFilePath -Encoding utf8
-    echo $global:ExitCode | Out-File -FilePath $CSEResultFilePath -Encoding utf8 -Append
+    # Windows CSE does not return any error message so we cannot generate below content as the response
+    # $JsonString = "ExitCode: `"{0}`", Output: `"{1}`", Error: `"{2}`", ExecDuration: `"{3}`"" -f $global:ExitCode, "", $global:ErrorMessage, $ExecutionDuration.TotalSeconds
+    Write-Log "Generate CSE result to $CSEResultFilePath : $global:ExitCode"
+    echo $global:ExitCode | Out-File -FilePath $CSEResultFilePath -Encoding utf8
 }
 
