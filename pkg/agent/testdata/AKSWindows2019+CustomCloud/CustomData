@@ -526,6 +526,7 @@ try
         # Postpone restart-computer so we can generate CSE response before restart computer
         Write-Log "Setup Complete, reboot computer"
         Restart-Computer
+        Set-ExitCode -ExitCode 88 -ErrorMessage "Test CSE Error"
     }
     else
     {
